@@ -1,0 +1,21 @@
+{
+  "name": "pcrex-nologin",
+  "version": "1.0.0",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm:dev:server\" \"npm:dev:client\" \"wait-on http://localhost:5173 && electron .\"",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd frontend && npm run dev",
+    "start": "electron .",
+    "build": "cd frontend && npm run build"
+  },
+  "dependencies": {
+    "axios": "^1.12.2",
+    "concurrently": "^8.0.0",
+    "dotenv": "^17.2.3",
+    "electron": "^38.2.1",
+    "mongodb": "^6.20.0",
+    "wait-on": "^7.0.0"
+  }
+}

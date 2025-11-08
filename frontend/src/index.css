@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; }
+body { background: linear-gradient(180deg, #f6f9ff, #f0f4ff); font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
+
+.card {
+  background: rgb(255, 255, 255);
+  border-radius: 1rem;
+  box-shadow: 0 6px 18px rgba(15,23,42,0.08);
+  padding: 1.5rem;
+}
+
+img.product-thumb { border-radius: 0.5rem; box-shadow: 0 2px 6px rgba(15,23,42,0.06); max-width:100%; }
