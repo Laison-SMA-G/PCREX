@@ -3,12 +3,32 @@ import Order from "../models/Order.js";
 
 const router = express.Router();
 
-// ✅ Get all orders (for admin)
+// ✅ Create new order (for users)
+router.post("/", async (req, res) => {
+  try {
+    const newOrder = await Order.create(req.body);
+    const populatedOrder = await newOrder.populate("customerId", "name email");
+
+    // 🔔 Notify admins (Socket.IO)
+    if (req.io) req.io.emit("newOrder", populatedOrder);
+
+    res.status(201).json(populatedOrder);
+  } catch (err) {
+    console.error("Error creating order:", err);
+    res.status(500).json({ error: "Failed to create order" });
+  }
+});
+
+// ✅ Get all orders (or filter by customerId)
 router.get("/", async (req, res) => {
   try {
-    const orders = await Order.find()
+    const filter = {};
+    if (req.query.customerId) filter.customerId = req.query.customerId;
+
+    const orders = await Order.find(filter)
       .populate("customerId", "name email")
       .sort({ orderDate: -1 });
+
     res.json(orders);
   } catch (err) {
     console.error("Error fetching orders:", err);
@@ -17,7 +37,7 @@ router.get("/", async (req, res) => {
 });
 
 // ✅ Update order status
-router.patch("/:id/status", async (req, res) => {
+router.put("/:id/status", async (req, res) => {
   try {
     const { status } = req.body;
     const updated = await Order.findByIdAndUpdate(

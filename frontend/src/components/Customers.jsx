@@ -1,139 +1,168 @@
+// src/pages/Customers.jsx
 import React, { useEffect, useState } from "react";
 import { api } from "../api.js";
-import getImageUrl from "../utils/getImageUrl";
+import toast, { Toaster } from "react-hot-toast";
 
 export default function Customers() {
   const [customers, setCustomers] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [details, setDetails] = useState(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchCustomers();
   }, []);
 
-  // ✅ Fetch all users (admin)
   async function fetchCustomers() {
-    try {
-      const res = await api.get("/users"); // grid endpoint
-      setCustomers(Array.isArray(res) ? res : []);
-    } catch (err) {
-      console.error("Failed to fetch customers:", err);
-    }
-  }
-
-  // ✅ Fetch single user with order details
-  async function openDetails(customer) {
-    setSelectedCustomer(customer);
     setLoading(true);
     try {
-      const res = await api.get(`/users/${customer._id}`); // single customer endpoint
-      setDetails({
-        ...res,
-        totalSpent: res.totalSpent || 0,
-        totalOrders: res.totalOrders || 0,
-        ordersByStatus: res.ordersByStatus || {},
-      });
+      const data = await api.get("/customers");
+      setCustomers(data);
     } catch (err) {
-      console.error("Failed to load customer details:", err);
-      setDetails(null);
+      console.error("Failed to fetch customers:", err);
+      toast.error("Failed to fetch customers");
     } finally {
       setLoading(false);
     }
   }
 
-  function closeModal() {
-    setSelectedCustomer(null);
-    setDetails(null);
+  async function viewCustomerDetails(id) {
+    try {
+      const data = await api.get(`/customers/${id}`);
+      setSelectedCustomer(data);
+    } catch (err) {
+      console.error("Failed to fetch customer details:", err);
+      toast.error("Failed to fetch customer details");
+    }
+  }
+
+  // ✅ Handle status change
+  async function handleStatusChange(orderId, newStatus) {
+    try {
+      await api.put(`/orders/${orderId}/status`, { status: newStatus });
+      toast.success("Order status updated!");
+
+      // Update state locally
+      setSelectedCustomer((prev) => ({
+        ...prev,
+        orders: prev.orders.map((order) =>
+          order._id === orderId ? { ...order, status: newStatus } : order
+        ),
+      }));
+    } catch (err) {
+      console.error("Failed to update order status:", err);
+      toast.error("Failed to update order status");
+    }
   }
 
   return (
-    <div className="p-4 space-y-4">
-      <h2 className="text-2xl font-semibold mb-4">Customers</h2>
+    <div className="space-y-6 p-4">
+      <Toaster position="top-right" />
+      <h2 className="text-2xl font-semibold">Customers</h2>
 
-      {/* Customer Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {customers.map((c) => (
-          <div
-            key={c._id}
-            onClick={() => openDetails(c)}
-            className="cursor-pointer border rounded-lg shadow p-4 flex flex-col items-center text-center bg-white hover:shadow-lg hover:bg-slate-50 transition"
-          >
-            <img
-              src={getImageUrl(c.profileImage || "")}
-              alt={c.fullName || c.email}
-              className="w-20 h-20 object-cover rounded-full mb-3 border"
-            />
-            <h3 className="font-semibold text-lg">{c.fullName || "No Name"}</h3>
-            <p className="text-sm text-gray-600">{c.email || "No Email"}</p>
-          </div>
-        ))}
-      </div>
+      {loading ? (
+        <p>Loading...</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full border rounded-lg overflow-hidden">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="p-3 text-left">Name</th>
+                <th className="p-3 text-left">Email</th>
+                <th className="p-3 text-left">Orders</th>
+                <th className="p-3 text-left">Total Spent (₱)</th>
+                <th className="p-3 text-left"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {customers.map((c) => (
+                <tr key={c._id} className="border-b hover:bg-gray-50">
+                  <td className="p-3 flex items-center gap-2">
+                    {c.profilePicture ? (
+                      <img
+                        src={c.profilePicture}
+                        alt=""
+                        className="w-8 h-8 rounded-full"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
+                    )}
+                    {c.name}
+                  </td>
+                  <td className="p-3">{c.email}</td>
+                  <td className="p-3">{c.totalOrders}</td>
+                  <td className="p-3">{c.totalSpent.toFixed(2)}</td>
+                  <td className="p-3">
+                    <button
+                      onClick={() => viewCustomerDetails(c._id)}
+                      className="text-blue-600 hover:underline"
+                    >
+                      View
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {customers.length === 0 && (
+                <tr>
+                  <td className="p-3 text-center text-gray-500" colSpan={5}>
+                    No customers found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-      {/* Modal */}
       {selectedCustomer && (
-        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl relative max-h-[90vh] overflow-y-auto p-6">
-            <button
-              onClick={closeModal}
-              className="absolute top-3 right-3 text-gray-500 hover:text-red-500 text-xl"
-            >
-              ✕
-            </button>
+        <div className="bg-white border rounded-lg p-6 shadow-md mt-6">
+          <h3 className="text-xl font-semibold mb-3">
+            {selectedCustomer.name}'s Details
+          </h3>
+          <p>Email: {selectedCustomer.email}</p>
+          <p>Total Orders: {selectedCustomer.totalOrders}</p>
+          <p>Total Spent: ₱{selectedCustomer.totalSpent.toFixed(2)}</p>
 
-            {loading ? (
-              <div className="text-center py-10 text-gray-500">Loading...</div>
-            ) : details ? (
-              <div className="text-center">
-                <img
-                  src={getImageUrl(details.profileImage || "")}
-                  alt={details.fullName}
-                  className="w-24 h-24 object-cover rounded-full mx-auto mb-3 border"
-                />
-                <h3 className="text-xl font-semibold mb-1">{details.fullName || "No Name"}</h3>
-                <p className="text-gray-600 mb-2">{details.email || "No Email"}</p>
+          <h4 className="mt-4 font-semibold text-gray-700">Order History:</h4>
+          {selectedCustomer.orders.length === 0 ? (
+            <p className="text-gray-500 mt-1">No orders yet.</p>
+          ) : (
+            <ul className="space-y-2 mt-2">
+              {selectedCustomer.orders.map((order) => (
+                <li
+                  key={order._id}
+                  className="border p-3 rounded bg-gray-50 flex justify-between items-center"
+                >
+                  <div>
+                    <p>
+                      <strong>Status:</strong>{" "}
+                      <select
+                        value={order.status}
+                        onChange={(e) =>
+                          handleStatusChange(order._id, e.target.value)
+                        }
+                        className="border rounded px-2 py-1 ml-2"
+                      >
+                        <option value="To Ship">To Ship</option>
+                        <option value="To Receive">To Receive</option>
+                        <option value="To Review">To Review</option>
+                        <option value="Completed">Completed</option>
+                      </select>
+                    </p>
+                    <p>Date: {new Date(order.orderDate).toLocaleDateString()}</p>
+                    <p>Items: {order.items.map((i) => i.name).join(", ")}</p>
+                  </div>
+                  <p className="font-bold">₱{order.total.toFixed(2)}</p>
+                </li>
+              ))}
+            </ul>
+          )}
 
-                {details.phone && <p className="text-gray-700">📞 <b>{details.phone}</b></p>}
-                {details.address && <p className="text-gray-700 mb-3">📍 {details.address}</p>}
-
-                <div className="border-t mt-3 pt-3 space-y-3 text-left">
-                  <p className="text-sm text-gray-700">🛍️ <b>Total Orders:</b> {details.totalOrders}</p>
-                  <p className="text-sm text-gray-700">💰 <b>Total Spent:</b> ₱{details.totalSpent.toFixed(2)}</p>
-
-                  {/* Orders by Status */}
-                  {details.ordersByStatus && Object.keys(details.ordersByStatus).length > 0 ? (
-                    Object.keys(details.ordersByStatus).map((status) => (
-                      <div key={status} className="mt-2">
-                        <h4 className="font-semibold">{status} ({details.ordersByStatus[status]?.length || 0})</h4>
-                        {details.ordersByStatus[status]?.length === 0 ? (
-                          <p className="text-sm text-gray-500">No orders in this status.</p>
-                        ) : (
-                          <ul className="text-sm text-gray-700 space-y-2 max-h-60 overflow-y-auto border p-2 rounded">
-                            {details.ordersByStatus[status].map((order) => (
-                              <li key={order._id} className="border-b pb-1 mb-1">
-                                <p><b>Order Total:</b> ₱{(order.total || 0).toFixed(2)} | <b>Date:</b> {order.orderDate ? new Date(order.orderDate).toLocaleDateString() : "N/A"}</p>
-                                <ul className="ml-4 mt-1 space-y-1">
-                                  {order.items && order.items.map((item) => (
-                                    <li key={item._id}>
-                                      {item.name} x {item.quantity} = ₱{(item.price * item.quantity).toFixed(2)}
-                                    </li>
-                                  ))}
-                                </ul>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-gray-500">No orders available.</p>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <p className="text-center text-gray-500 py-8">Failed to load customer details.</p>
-            )}
-          </div>
+          <button
+            onClick={() => setSelectedCustomer(null)}
+            className="mt-4 bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+          >
+            Close
+          </button>
         </div>
       )}
     </div>
