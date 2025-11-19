@@ -1,3 +1,22 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:cdb2d63f3a6e9ab92addceeb65006ca1d36788250297c69bc720944702ff51d1
-size 562
+// models/Product.js
+import mongoose from "mongoose";
+
+const productSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    description: { type: String },
+    price: { type: Number, required: true },
+    quantity: { type: Number, default: 0 }, // ✅ fixed stock tracking
+    images: [String],
+    category: {
+      type: String,
+      enum: ["Components", "Peripherals", "Accessories", "Pre-built", "Others"],
+      default: "Components",
+    },
+  },
+  { timestamps: true }
+);
+
+const Product = mongoose.model("Product", productSchema);
+export default Product;
+

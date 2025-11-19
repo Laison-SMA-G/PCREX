@@ -1,3 +1,18 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:8170fee41c3e70c636abbc42497f494f927324c522bc7a9b5315cfef99394b6b
-size 409
+// utils/getImageUrl.js
+
+// Correct centralized mobile backend URL (lowercase)
+const BASE_URL = "https://mobile-application-2.onrender.com";
+
+export default function getImageUrl(path) {
+  if (!path) {
+    return "https://placehold.co/150x150?text=No+Image";
+  }
+
+  // If path is already a full URL or Base64 string
+  if (path.startsWith("http") || path.startsWith("data:image")) {
+    return path;
+  }
+
+  // Convert "/uploads/file.jpg" → "https://mobile-application-2.onrender.com/uploads/file.jpg"
+  return `${BASE_URL}${path}`;
+}
