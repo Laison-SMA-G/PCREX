@@ -14,8 +14,6 @@ function createWindow() {
     },
   });
 
-   win.loadFile("./renderer/addProduct.html");
-
   win.loadFile(path.join(__dirname, 'frontend/dist/index.html'));
 }
 
@@ -24,14 +22,6 @@ app.whenReady().then(() => {
 });
 
 // Handle Cloudinary upload
-ipcMain.handle("upload-to-cloudinary", async (event, filePath) => {
-  const result = await cloudinary.uploader.upload(filePath, {
-    folder: "products",
-  });
-
-  return result.secure_url; // image url
-});
-
 import cloudinary from "./cloudinary.js"; // make sure you have cloudinary.js
 
 ipcMain.handle('upload-to-cloudinary', async (event, filePath) => {
