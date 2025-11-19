@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const axios = require('axios');
+import cloudinary from "./cloudinary.js";
 const path = require('path');
 
 function createWindow() {
@@ -13,21 +14,37 @@ function createWindow() {
     },
   });
 
+   win.loadFile("./renderer/addProduct.html");
+
   win.loadFile(path.join(__dirname, 'frontend/dist/index.html'));
 }
 
-ipcMain.handle('api-request', async (event, { method, url, data }) => {
+app.whenReady().then(() => {
+  createWindow();
+});
+
+// Handle Cloudinary upload
+ipcMain.handle("upload-to-cloudinary", async (event, filePath) => {
+  const result = await cloudinary.uploader.upload(filePath, {
+    folder: "products",
+  });
+
+  return result.secure_url; // image url
+});
+
+import cloudinary from "./cloudinary.js"; // make sure you have cloudinary.js
+
+ipcMain.handle('upload-to-cloudinary', async (event, filePath) => {
   try {
-    const response = await axios({
-      method,
-      url: `http://127.0.0.1:5175${url}`,
-      data,
+    const result = await cloudinary.uploader.upload(filePath, {
+      folder: "products",
     });
-    return response.data;
+    return { url: result.secure_url };
   } catch (err) {
-    console.error('❌ Backend connection failed:', err.message);
+    console.error("❌ Cloudinary upload failed:", err.message);
     return { error: err.message };
   }
 });
+
 
 app.whenReady().then(createWindow);

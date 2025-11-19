@@ -1,25 +1,22 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
-
-dotenv.config();
 
 const router = express.Router();
 
-// Default admin credentials (can override via .env)
-const ADMIN_USERNAME = process.env.ADMIN_USER || "admin";
-const ADMIN_PLAIN = process.env.ADMIN_PASS || "admin123";
+// ------------------------------
+// ADMIN CONFIG
+// ------------------------------
+const ADMIN_USERNAME = "admin";
+const ADMIN_PASSWORD = "admin123";
 
-let ADMIN_HASH = null;
+// Hash password synchronously
+const ADMIN_HASH = bcrypt.hashSync(ADMIN_PASSWORD, 10);
+console.log("✅ Admin account ready ->", ADMIN_USERNAME);
 
-// Hash password at server startup
-(async () => {
-  ADMIN_HASH = await bcrypt.hash(ADMIN_PLAIN, 10);
-  console.log("✅ Admin account ready ->", ADMIN_USERNAME);
-})();
-
-// --- LOGIN ENDPOINT ---
+// ------------------------------
+// LOGIN ENDPOINT
+// ------------------------------
 router.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
@@ -46,7 +43,9 @@ router.post("/login", async (req, res) => {
   });
 });
 
-// ✅ NEW: Verify token route
+// ------------------------------
+// VERIFY TOKEN ENDPOINT
+// ------------------------------
 router.get("/verify", (req, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) return res.status(401).json({ error: "No token provided" });

@@ -1,34 +1,33 @@
-const BASE_URL = 'http://127.0.0.1:5175/api';
+const BASE_URL = "https://Mobile-application-2.onrender.com/api";
 
 async function request(method, endpoint, data = null) {
+  const token = localStorage.getItem("pcrex_token");
   const isFormData = data instanceof FormData;
+
   const requestOptions = {
     method,
-    headers: isFormData ? {} : { "Content-Type": "application/json" },
-    body: isFormData ? data : data ? JSON.stringify(data) : null,
+    headers: isFormData
+      ? token ? { Authorization: `Bearer ${token}` } : {}
+      : { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: data ? (isFormData ? data : JSON.stringify(data)) : null,
   };
 
   const fullUrl = `${BASE_URL}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
   console.log(`Making ${method} request to: ${fullUrl}`);
 
-  try {
-    const res = await fetch(fullUrl, requestOptions);
-    if (!res.ok) {
-      const errorText = await res.text();
-      let errorMessage = res.statusText;
-      try {
-        const errorData = JSON.parse(errorText);
-        errorMessage = errorData.error || errorData.message || errorMessage;
-      } catch (e) {
-        errorMessage = errorText || errorMessage;
-      }
-      throw new Error(`API Error ${res.status}: ${errorMessage}`);
+  const res = await fetch(fullUrl, requestOptions);
+  if (!res.ok) {
+    const errorText = await res.text();
+    let errorMessage = res.statusText;
+    try {
+      const errorData = JSON.parse(errorText);
+      errorMessage = errorData.error || errorData.message || errorMessage;
+    } catch (e) {
+      errorMessage = errorText || errorMessage;
     }
-    return await res.json();
-  } catch (err) {
-    console.error("Fetch error in api.js:", err);
-    throw err;
+    throw new Error(`API Error ${res.status}: ${errorMessage}`);
   }
+  return await res.json();
 }
 
 export const api = {
