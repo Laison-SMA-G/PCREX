@@ -3,18 +3,16 @@ import Sale from "../models/Sale.js";
 
 const router = express.Router();
 
-// Create a sale
+// Mobile: Create a sale
 router.post("/", async (req, res) => {
   try {
     const { productId, quantity, amount } = req.body;
-
     if (!productId || !quantity || !amount) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
     const sale = new Sale({ productId, quantity, amount, createdAt: new Date() });
     await sale.save();
-
     res.status(201).json(sale);
   } catch (err) {
     console.error("Error creating sale:", err);
@@ -22,18 +20,22 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Get last 100 sales
-router.get("/", async (req, res) => {
+
+export const getAllSales = async (req, res) => {
   try {
-    const sales = await Sale.find().sort({ createdAt: -1 }).limit(100);
+    const sales = await Sale.find()
+      .populate("user", "name email")
+      .populate("order", "_id totalAmount date")
+      .sort({ createdAt: -1 })
+      .limit(100);
     res.json(sales);
   } catch (err) {
-    console.error("Error fetching sales:", err);
-    res.status(500).json({ error: err.message });
+    console.error("Error fetching all sales:", err);
+    res.status(500).json({ error: "Failed to fetch all sales" });
   }
-});
+};
 
-// Sales stats by period
+// Mobile: Sales stats by period
 router.get("/stats/:period", async (req, res) => {
   try {
     const { period } = req.params;
@@ -54,13 +56,7 @@ router.get("/stats/:period", async (req, res) => {
 
     const stats = await Sale.aggregate([
       { $match: { createdAt: { $gte: start } } },
-      {
-        $group: {
-          _id: null,
-          totalAmount: { $sum: "$amount" },
-          count: { $sum: 1 },
-        },
-      },
+      { $group: { _id: null, totalAmount: { $sum: "$amount" }, count: { $sum: 1 } } },
     ]);
 
     res.json(stats[0] || { totalAmount: 0, count: 0 });
@@ -69,5 +65,28 @@ router.get("/stats/:period", async (req, res) => {
     res.status(500).json({ error: err.message, totalAmount: 0, count: 0 });
   }
 });
+
+// Mobile/Desktop: Get single sale by ID
+export const getSaleById = async (req, res) => {
+  try {
+    const sale = await Sale.findById(req.params.id)
+      .populate("user", "name email")
+      .populate("order");
+    if (!sale) return res.status(404).json({ error: "Sale not found" });
+    res.json(sale);
+  } catch (err) {
+    console.error("Error fetching sale:", err);
+    res.status(500).json({ error: "Failed to fetch sale" });
+  }
+};
+
+// Desktop summary route
+
+
+// Mobile/Desktop list route
+router.get("/", getAllSales);
+
+// Mobile single sale
+router.get("/mobile/product/:id", getSaleById);
 
 export default router;

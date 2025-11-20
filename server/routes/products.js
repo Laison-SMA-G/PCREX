@@ -2,9 +2,13 @@ import express from "express";
 import Product from "../models/Product.js";
 import multer from "multer";
 import cloudinary from "../config/cloudinary.js";
+import  fixImageUrls  from "../middleware/fixImageUrls.js";
 import fs from "fs";
 
 const router = express.Router();
+
+
+router.use(fixImageUrls);
 
 // Multer memory storage (NO FILE SAVED LOCALLY)
 const storage = multer.memoryStorage();

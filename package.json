@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "main.js",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "concurrently \"npm:dev:server\" \"npm:dev:client\" \"wait-on http://localhost:5173 && electron .\"",
     "dev:server": "cd server && npm run dev",
